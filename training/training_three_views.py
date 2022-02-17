@@ -1,3 +1,4 @@
+from cmath import inf
 from pickletools import optimize
 from pyexpat import model
 import torch
@@ -17,26 +18,38 @@ from datasets.with_look_up_table import FullBrainDataset
 from brain_classification_preperation import *
 from my_models.monai_densenet import monai_densenet_three_views
 from evaluation import *
+from libauc.losses import AUCMLoss
+from libauc.optimizers import PESG
+from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_auc_score
 
 
 class train_three_view():
     #set variables
-    def __init__(self, batch_size, lr, optimizer, l1, l2):
+    def __init__(self, batch_size, lr, optimizer, l1, l2, loss_function):
         self.batch_size = batch_size
         self.lr = lr
         self.optimizer = optimizer
         self.l1 = l1
         self.l2 = l2
+        self.loss_function = loss_function
+
+        self.local_path = "./"
+        
         #read csv files
-        train_set = pd.read_csv("/home/rfyahya/Desktop/Rawan/brain/clean/training_with_val_split.csv")
-        test_set = pd.read_csv("/home/rfyahya/Desktop/Rawan/brain/clean/test_df.csv")
-        val_set = pd.read_csv("/home/rfyahya/Desktop/Rawan/brain/clean/val_set.csv")
+        train_set = pd.read_csv(self.local_path +"dataframes/training_set_t2w.csv").reset_index(drop=True)
+        #train_set = train_set[(train_set["BraTS21ID"] != 28) & (train_set["BraTS21ID"] != 113) & (train_set["BraTS21ID"] != 610) & (train_set["BraTS21ID"] != 663) & (train_set["BraTS21ID"] != 736)]
+        test_set = pd.read_csv(self.local_path + "dataframes/testing_set_t2w.csv").reset_index(drop=True)
+        val_set = pd.read_csv(self.local_path + "dataframes/validation_set_t2w.csv").reset_index(drop=True)
+
+
         #use a look-up table to find the slices with the largest tumor without having to loop everytime 
-        lookup_table = pd.read_csv("/home/rfyahya/Desktop/Rawan/brain/clean/slice_lookup.csv")
+        lookup_table = pd.read_csv(self.local_path + "dataframes/slice_lookup.csv")
 
 
         #define datasets 
-        dataset_train = FullBrainDataset(datafram=train_set,
+        dataset_train = FullBrainDataset(local_path = "../",
+                                        datafram=train_set,
                                         lookup_df=lookup_table,
                                         MRI_type="T2w",
                                         transform=transforms.Compose([
@@ -56,7 +69,8 @@ class train_three_view():
                                 ]))
                                                     
 
-        dataset_test = FullBrainDataset(datafram=test_set,
+        dataset_test = FullBrainDataset(local_path = "../",
+                                        datafram=test_set,
                                         lookup_df=lookup_table,
                                         MRI_type="T2w",
                                         transform=transforms.Compose([
@@ -67,7 +81,8 @@ class train_three_view():
                                                     #T.Normalize(mean = [0.0085], std = [1.0132]),                           
                                 ]))
 
-        dataset_val = FullBrainDataset(datafram=val_set,
+        dataset_val = FullBrainDataset(local_path = "../",
+                                        datafram=val_set,
                                         lookup_df=lookup_table,
                                         MRI_type="T2w",
                                         transform=transforms.Compose([
@@ -79,7 +94,6 @@ class train_three_view():
                                 ]))
 
         self.device = ("cuda" if torch.cuda.is_available() else "cpu")
-
 
 
         def collate_fn(batch):
@@ -108,7 +122,11 @@ class train_three_view():
                                 num_workers=28, shuffle=False, collate_fn=collate_fn)
 
 
-        self.criterion = nn.CrossEntropyLoss()#weight=torch.from_numpy(weight).float().to(device))
+        if self.loss_function == "AUCMLoss":
+            self.criterion = AUCMLoss()
+
+        elif self.loss_function == "cross_entropy":
+            self.criterion = nn.CrossEntropyLoss()#weight=torch.from_numpy(weight).float().to(device))
 
         assert self.optimizer in ["Adam", "SGD", "Adagrad"]
 
@@ -121,23 +139,24 @@ class train_three_view():
         elif self.optimizer == "Adagrad":
             self.optimizer = torch.optim.Adagrad(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
 
-
+        elif self.optimizer == "PESG":
+            self.optimizer = PESG(self.model, a=self.criterion.a, b=self.criterion.b, alpha=self.criterion.alpha, lr=self.lr )
     
 
 
     def accuracy(self, outputs, labels):
         return (outputs == labels).float().sum()/(labels.shape[0])
 
+        #return roc_auc_score(labels.cpu() , outputs.cpu().detach().numpy()[:,1]) 
+
     def train_three_views(self, num_epochs, train_dataloader, val_dataloader, plot=False):
-        best_acc1 = -1
+        best_loss = inf
         train_acc = []
         val_acc = []
         train_loss = []
         val_loss = []
         early_stop_epoch_point = 0
 
-
-        best_acc1 = -1
         for epoch in range(num_epochs):
             # print('Epoch {}/{}'.format(epoch, num_epochs - 1))
             # print('-' * 10)
@@ -150,11 +169,7 @@ class train_three_view():
             
             val_running_loss = 0.0
             val_running_corrects = 0
-            
-            count_val_acc = 0
-            count_train_acc = 0
-
-
+        
             for i, batch in enumerate(train_dataloader):   
                 self.model.train()
                 input_1 = batch["image"][0].to(self.device, dtype=torch.float)
@@ -163,15 +178,18 @@ class train_three_view():
                 labels = batch["label"]
                 labels = np.asarray(labels)
                 labels = torch.from_numpy(labels.astype('long')).to(self.device)
-                #print("labels: ", labels)
                 
                 self.optimizer.zero_grad()
                 with torch.set_grad_enabled(True):
                     outputs = self.model(input_1, input_2, input_3)
-                    #print(outputs)
                     _, preds = torch.max(outputs, 1)
 
-                    loss = self.criterion(outputs, labels)
+                    if self.loss_function == "AUCMLoss":
+                        loss = self.criterion(preds, labels)
+
+                    elif self.loss_function == "cross_entropy":
+                        loss = self.criterion(outputs, labels)
+
     
 
                     loss.backward()
@@ -182,8 +200,7 @@ class train_three_view():
                     train_running_corrects += self.accuracy(preds, labels)
                 except:
                     pass
-                else:
-                    count_train_acc += 1
+ 
                     
                 train_running_loss += loss.item()
     
@@ -201,14 +218,19 @@ class train_three_view():
                     outputs = self.model(input_1, input_2, input_3)
                     _, preds = torch.max(outputs, 1)  
                                 
-                    loss = self.criterion(outputs, labels)
+                    if self.loss_function == "AUCMLoss":
+                        loss = self.criterion(preds, labels)
+
+                    elif self.loss_function == "cross_entropy":
+                        loss = self.criterion(outputs, labels)
+
                 
                 try:
                     val_running_corrects += self.accuracy(preds, labels)
-                except:
+                except Exception as e:
+                    print(str(e))
                     pass
-                else:
-                    count_val_acc += 1
+
                     
                 val_running_loss += loss.item()
 
@@ -218,17 +240,15 @@ class train_three_view():
             train_running_loss = train_running_loss / len(train_dataloader)
             val_running_loss = val_running_loss / len(val_dataloader)
             
-            is_best = epoch_acc_val > best_acc1
-
-            best_acc1 = max(epoch_acc_val, best_acc1)
+            is_best = val_running_loss < best_loss
+            best_loss = min(val_running_loss, best_loss)
             if is_best:
-                torch.save(self.model,"/home/rfyahya/Desktop/Rawan/brain/clean/visual studios/training/best_model.pt" )
-                print("best val acc = ", best_acc1)
+                torch.save(self.model,self.local_path+"saved_models/best_model.pt" )
+                print("best val loss = ", best_loss)
                 early_stop_epoch_point = epoch
 
             if epoch == (100 + early_stop_epoch_point):
                 break
-
 
             try:      
                 train_acc.append(epoch_acc_train.item())
@@ -274,28 +294,36 @@ class train_three_view():
 
 
     def train_evaluate(self):
-        last_model, val_loss, train_loss, val_acc, train_acc = self.train_three_views(400, self.dataloader_train, self.dataloader_val, plot = False)
+        #last_model, val_loss, train_loss, val_acc, train_acc = self.train_three_views(400, self.dataloader_train, self.dataloader_val, plot = False)
         #plot_performance(val_loss, train_loss, val_acc, train_acc)
-        print("last model info")
+        
+        # print("last model info")
 
-        get_f1_score_precision_recall_three_inputs(last_model,self.dataloader_test)
-        get_confusion_matrix_AUC_three_inputs(last_model, self.dataloader_test, nb_classes=2)
+        # get_f1_score_precision_recall_three_inputs(last_model,self.dataloader_test)
+        # get_confusion_matrix_AUC_three_inputs(last_model, self.dataloader_test, nb_classes=2)
 
 
         print("\n best model info")
         best_model = monai_densenet_three_views()
-        best_model = torch.load("/home/rfyahya/Desktop/Rawan/brain/clean/visual studios/training/best_model.pt")
-        auc = get_confusion_matrix_AUC_three_inputs(best_model, self.dataloader_test,nb_classes=2)
-        f1_score, recall, precision = get_f1_score_precision_recall_three_inputs(best_model, self.dataloader_test)
+        best_model = torch.load(self.local_path+"saved_models/best_model.pt" )
+        auc_test = get_confusion_matrix_AUC_three_inputs(best_model, self.dataloader_test,nb_classes=2)
+        f1_score_test, recall_test, precision_test = get_f1_score_precision_recall_three_inputs(best_model, self.dataloader_test)
+
+        auc_val = get_confusion_matrix_AUC_three_inputs(best_model, self.dataloader_val,nb_classes=2)
+        f1_score_val, recall_val, precision_val = get_f1_score_precision_recall_three_inputs(best_model, self.dataloader_val)
 
         #write results in csv file
         experiments = pd.read_csv("experiments_three_view_t2w.csv")
         print(experiments)
         new_results = pd.DataFrame()
-        new_results["AUC"] = [auc]
-        new_results["F1 Score"] = [f1_score]
-        new_results["recall"] = [recall]
-        new_results["precision"]= [precision]
+        new_results["AUC_test"] = [auc_test]
+        new_results["F1 Score test"] = [f1_score_test]
+        new_results["recall_test"] = [recall_test]
+        new_results["precision_test"]= [precision_test]
+        new_results["AUC_val"] = [auc_val]
+        new_results["F1 Score val"] = [f1_score_val]
+        new_results["recall_val"] = [recall_val]
+        new_results["precision_val"]= [precision_val]
         new_results["lr"]= [self.lr]
         new_results["batch_size"] = [self.batch_size]
         new_results["optimizer"] = [self.optimizer]
@@ -303,6 +331,6 @@ class train_three_view():
         new_results["l2"] = [self.l2]
 
         print(new_results)
-        experiments = pd.concat([experiments, new_results]).reset_index(drop=True)
-        experiments.to_csv("experiments_three_view_t2w.csv", index=False)
+        # experiments = pd.concat([experiments, new_results]).reset_index(drop=True)
+        # experiments.to_csv("experiments_three_view_t2w.csv", index=False)
 

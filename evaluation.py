@@ -12,6 +12,8 @@ from sklearn import preprocessing
 def get_confusion_matrix_AUC_three_inputs(model, dataloader, nb_classes=2):
     truth = []
     predections = []
+    positives = []
+    negatives = []
 
     confusion_matrix = torch.zeros(nb_classes, nb_classes)
     with torch.no_grad():
@@ -40,11 +42,15 @@ def get_confusion_matrix_AUC_three_inputs(model, dataloader, nb_classes=2):
             
             for k in range(labels.shape[0]):
                 truth.append(labels[k].item())
-            
-            for t, p in zip(labels.view(-1), preds.view(-1)):  
+
+
+            for t, p in zip(labels.view(-1), preds.view(-1)): 
                 confusion_matrix[1-t.long(),1-p.long()] += 1
 
     print(confusion_matrix)
+
+
+    return roc_auc_score(truth , predections[:,1]) 
 
 def get_f1_score_precision_recall_three_inputs(model, dataloader):
     truth = []
@@ -96,7 +102,16 @@ def get_f1_score_precision_recall_three_inputs(model, dataloader):
 
     precision = tp / (tp+fp)
     recall = tp / (tp+fn)
-    f1_score = 2 * ((precision * recall) / (precision + recall))
+
+    try:
+        f1_score = 2 * ((precision * recall) / (precision + recall))
+    except:
+        print("tp = ", tp)
+        print("fp = ", fp)
+        print("fn = ", fn)
+        print("p = ", precision)
+        print("r = ", recall)
+        f1_score = 0
 
     print("f1 score = {}, precision ={}, recall = {}".format(f1_score, precision, recall))
 
@@ -534,44 +549,46 @@ def accuracy_on_patient_level(model, dataloader, df_test):
         all_patient_predictions.append(patient_preds[0])
 
         for t, p in zip(patient_truth, patient_preds):           
-                confusion_matrix[1-t.long(),1-p.long()] += 1
+                confusion_matrix[1-t,1-p] += 1
 
     print(confusion_matrix)
 
 
     #now find the ROC curves for each patient
-    y = label_binarize(all_patient_truth, classes=[0,1])
-    lb = preprocessing.LabelBinarizer()
-    lb.fit([0,1])
-    p = lb.transform(all_patient_predictions)
+    # y = label_binarize(all_patient_truth, classes=[0,1])
+    # lb = preprocessing.LabelBinarizer()
+    # lb.fit([0,1])
+    # p = lb.transform(all_patient_predictions)
 
-    n_classes = 1
+    # n_classes = 1
 
-    pr = dict()
-    tpr = dict()
-    roc_auc = dict()
+    # pr = dict()
+    # tpr = dict()
+    # roc_auc = dict()
 
-    fpr = dict()
-    tpr = dict()
-    thresholds = dict()
+    # fpr = dict()
+    # tpr = dict()
+    # thresholds = dict()
 
 
-    for i in range(n_classes):
-        fpr[i], tpr[i], thresholds[i] = roc_curve(y[:,i], p[:,i], drop_intermediate=False)
-        roc_auc[i] = auc(fpr[i], tpr[i])
+    # for i in range(n_classes):
+    #     fpr[i], tpr[i], thresholds[i] = roc_curve(y[:,i], p[:,i], drop_intermediate=False)
+    #     roc_auc[i] = auc(fpr[i], tpr[i])
+
+    auc =  roc_auc_score(truth , predections[:,1]) 
 
   
-    for i in range(n_classes):
-        plt.figure()
-        plt.plot(fpr[i], tpr[i], label='ROC curve (area = %0.5f)' % roc_auc[i])
-        plt.plot([0, 1], [0, 1], 'k--')
-        plt.xlim([0.0, 1.0])
-        plt.ylim([0.0, 1.05])
-        plt.xlabel('False Positive Rate')
-        plt.ylabel('True Positive Rate')
-        plt.title('Class ' + str(i))
-        plt.legend(loc="lower right")
-        plt.show()
+    # for i in range(n_classes):
+    #     plt.figure()
+    #     plt.plot(fpr[i], tpr[i], label='ROC curve (area = %0.5f)' % roc_auc[i])
+    #     plt.plot([0, 1], [0, 1], 'k--')
+    #     plt.xlim([0.0, 1.0])
+    #     plt.ylim([0.0, 1.05])
+    #     plt.xlabel('False Positive Rate')
+    #     plt.ylabel('True Positive Rate')
+    #     plt.title('Class ' + str(i))
+    #     plt.legend(loc="lower right")
+    #     plt.show()
 
 
     tp = 0
@@ -595,7 +612,7 @@ def accuracy_on_patient_level(model, dataloader, df_test):
     recall = tp / (tp+fn)
     f1_score = 2 * precision * recall / (precision + recall)
 
-    print("f1 score = {}, precision ={}, recall = {}".format(f1_score, precision, recall))
+    print("auc = {},f1 score = {}, precision ={}, recall = {}".format(auc, f1_score, precision, recall))
 
 
     

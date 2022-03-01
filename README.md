@@ -2,11 +2,25 @@
 
 # Introduction
 
-This is an implementation of the model used for MGMT Methylation in Glioblastoma Patients classification as described in our paper Multi View MRI Approach for Classification of MGMT Methylation in Glioblastoma Patients. The code for training, the Weights for trained models are provided. as well as provided Comparison source code.
+This is an implementation of the model used for MGMT Methylation in Glioblastoma Patients classification status as described in our paper Multi View MRI Approach for Classification of MGMT Methylation in Glioblastoma Patients.In this work, we utilize Magnetic Resonance Imaging (MRI) scans along with deep learning models to detect MGMT methylation status. We present a novel approach that exploits the spatial dependencies between the the MRI views.
+
+We provided training code , the Weights for trained models, as well as provided Comparison source code.
 
 
 
-The repository is divided into two folders. One for the source model that we used in the paper. The second for the comparison that we mentioned in the paper.
+# Pipeline
+
+The pre-processing pipeline consisting of three steps as shown in figure below:
+
+- DICOM files were converted to NIFTI format for each modality
+of each patient.
+- Volumes were re-oriented to left-posterior-superior (LPS)
+anatomical orientation. 
+- Registered to SRI-24 human brain atlas is applied to provide a uniform anatomical coordinate system across all volumes.
+
+
+
+
 # Architecture 
 Below we show our approch that we used in the paper.
 <div id="header" align="center">
@@ -18,4 +32,3 @@ Below we show our approch that we used in the paper.
 - Torch
 - Pydicom
 - Pyradiomics 
-- 

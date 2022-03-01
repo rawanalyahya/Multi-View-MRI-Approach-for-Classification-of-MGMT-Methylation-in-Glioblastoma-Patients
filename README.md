@@ -34,7 +34,7 @@ then concatenate the features and feed them to a fully connected layer for a fin
 classification. Below we show our approch that we used in the paper.
 
 <div id="header" align="center">
-  <img src="https://github.com/rawanalyahya/Multi-View-MRI-Approach-for-Classification-of-MGMT-Methylation-in-Glioblastoma-Patients/blob/main/figure/multi-view-model-v2.png" width="1000"/>
+  <img src="https://github.com/rawanalyahya/Multi-View-MRI-Approach-for-Classification-of-MGMT-Methylation-in-Glioblastoma-Patients/blob/main/figure/multi-view-model-v3.png" width="1000"/>
 </div>
 
 ## Prerequisites:

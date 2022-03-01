@@ -18,11 +18,14 @@ of each patient.
 anatomical orientation. 
 - Registered to SRI-24 human brain atlas is applied to provide a uniform anatomical coordinate system across all volumes.
 
-
+<div id="header" align="center">
+  <img src="https://github.com/rawanalyahya/Multi-View-MRI-Approach-for-Classification-of-MGMT-Methylation-in-Glioblastoma-Patients/blob/main/figure/pipline.png" width="1000"/>
+</div>
 
 
 # Architecture 
 Below we show our approch that we used in the paper.
+
 <div id="header" align="center">
   <img src="https://github.com/rawanalyahya/Multi-View-MRI-Approach-for-Classification-of-MGMT-Methylation-in-Glioblastoma-Patients/blob/main/figure/multi-view-model-v2.png" width="1000"/>
 </div>

@@ -1,6 +1,6 @@
 # Multi-View-MRI-Approach-for-Classification-of-MGMT-Methylation-in-Glioblastoma-Patients
 
-#Introduction
+# Introduction
 
 This is an implementation of the model used for MGMT Methylation in Glioblastoma Patients classification as described in our paper Multi View MRI Approach for Classification of MGMT Methylation in Glioblastoma Patients. The code for training, the Weights for trained models are provided. as well as provided Comparison source code.
 

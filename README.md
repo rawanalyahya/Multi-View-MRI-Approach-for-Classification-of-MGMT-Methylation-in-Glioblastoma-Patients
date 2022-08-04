@@ -38,7 +38,7 @@ classification. Below we show our approch that we used in the paper.
 </div>
 
 ## Prerequisites:
-- Python
-- Torch
-- Pydicom
-- Pyradiomics 
+- Python <version>
+- Torch <version>
+- Pydicom <version>
+- Pyradiomics <version>

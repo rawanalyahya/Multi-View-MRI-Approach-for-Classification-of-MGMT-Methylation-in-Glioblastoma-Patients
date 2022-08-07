@@ -1,6 +1,6 @@
 # Comparisons with SOTA methods on MGMT methylation classification
 
-We provided the code to reproduce the results we got from running each of the following methods:  
+We provided the code to reproduce the results we got from running each experiment. All code was run using python version 3.9.12. 
 
 ## Compare with Kaggle winner model 
 
@@ -20,7 +20,7 @@ This approch uses ResNet50 trained on a slice-by-slice basis assigning each slic
 
 ## Compare with method by Zhi-Cheng Li [2018](https://link.springer.com/article/10.1007/s00330-017-5302-1)
 
-This approch uses radiomics features as an input to the classifier instead of a visual MRI input. We extracted specific radiomics features from each sub-region of the tumor: edema, enhancing tumor, and necrosis. We then passed the extracted radiomics features to a random forest to get the final classification output. The validation set was used in this experiment to optimize the hyperparameters of the random forest.
+This approch uses radiomics features as an input to the classifier instead of a visual MRI input. We extracted specific radiomics features from each sub-region of the tumor: edema, enhancing tumor, and necrosis using the [pyradiomics library](https://github.com/AIM-Harvard/pyradiomics). We then passed the extracted radiomics features to a random forest to get the final classification output. The validation set was used in this experiment to optimize the hyperparameters of the random forest.
 
 To run this experiment:
 - First, extract the radiomics feature by running the Jupyter Notebook ExtractRadiomics.ipynb

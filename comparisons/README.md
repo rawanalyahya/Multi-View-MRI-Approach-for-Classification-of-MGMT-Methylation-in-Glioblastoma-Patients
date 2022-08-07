@@ -4,7 +4,7 @@ We provided the code to reproduce the results we got from running each of the fo
 
 ## Compare with Kaggle winner model 
 
-Code made available by the author at [his GitHub page](https://github.com/FirasBaba/rsna-resnet10)
+Code made available by the author at [his GitHub page](https://github.com/FirasBaba/rsna-resnet10).
 We modified the code such that we do not apply cross validation as the author did. We instead use our training/validation/testin split. We also some code in validation.py to measure more metrics. 
 The code expects DICOM files without preproccessing which can be downloaded from [here](https://www.kaggle.com/competitions/rsna-miccai-brain-tumor-radiogenomic-classification/data).
 

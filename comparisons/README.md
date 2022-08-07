@@ -1,4 +1,6 @@
- This is to describe other benchmark comparisons models and how to run them.
+# Comparisons with SOTA methods on MGMT methylation classification
+
+We provided the code to reproduce the results we got from running each of the following methods:  
 
 # Compare with Kaggle winner model 
 
@@ -22,4 +24,4 @@ This approch uses radiomics features as an input to the classifier instead of a 
 
 To run this experiment:
 - First, extract the radiomics feature by running the Jupyter Notebook ExtractRadiomics.ipynb
-- Run the random forest classifier by running the Jupyter Notebook bRandomForestModel.ipynb
+- Run the random forest classifier by running the Jupyter Notebook RandomForestModel.ipynb

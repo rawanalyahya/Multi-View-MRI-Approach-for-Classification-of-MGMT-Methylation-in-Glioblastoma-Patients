@@ -58,5 +58,6 @@ python main.py -n multi_view -t {train/eval} -b 16 -lr 0.001 -opt Adagrad  -l1 5
 -l2 is the number of neurons in the second layer of the FC network.   
 -l-ss is the loss function.
 
-To experiment with a single view experiment you can set the name of the experiment to *coronal_view*, *sagittal_view*, or *axial_view*.
+To experiment with a single view experiment you can set the name of the experiment to *coronal_view*, *sagittal_view*, or *axial_view*.   
+To experiment with training a 3D volume you can set the name of the experiment to *3d*.   
 

@@ -11,7 +11,7 @@ The code expects DICOM files without preproccessing which can be downloaded from
 To run this experiment:
 
 ```
-bash train_valid.sh
+bash rsna-resnet10/train_valid.sh
 ```
 
 ## Compare with method by Korfiatis et. al [2017](https://link.springer.com/article/10.1007/s10278-017-0009-z)

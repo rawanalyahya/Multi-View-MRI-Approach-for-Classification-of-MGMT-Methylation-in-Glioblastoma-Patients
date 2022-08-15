@@ -42,3 +42,19 @@ classification. Below we show our approch that we used in the paper.
 - Torch <version>
 - Pydicom <version>
 - Pyradiomics <version>
+
+# Training and Evaluation
+
+To train our model run with the best hyperparameters the command:
+```
+python main.py -n multi_view -t {train/eval} -b 16 -lr 0.001 -opt Adagrad  -l1 588 -l2 1176 -loss cross_entropy
+```
+-n is the name of the experiment.   
+-t is the task argument and can either be *train* or *eval*.    
+-b is the batch size.   
+-lr is the learning rate.   
+-opt is the optimizer.
+-l1 is the number of neurons in the first layer of the FC network.   
+-l2 is the number of neurons in the second layer of the FC network.   
+-l-ss is the loss function.
+
